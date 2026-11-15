@@ -1,169 +1,108 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="./css/reset.css">
-    <link rel="stylesheet" href="./css/style.css">
-    <title>お宝探しゲーム</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="description" content="松明の灯りを頼りに、ふたつの道を選ぶ。レトロなドット絵のお宝探しゲーム。">
+  <title>深淵の分かれ道｜お宝探し</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23d9b66f' d='M2 5h12v8H2zM4 3h8v2H4z'/%3E%3Cpath fill='%232e2430' d='M2 8h12v2H2z'/%3E%3Cpath fill='%23fff1c4' d='M7 7h2v4H7z'/%3E%3C/svg%3E">
+  <link rel="preload" href="./fonts/DotGothic16-Regular.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="./css/reset.css">
+  <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-    <!-- 整理後：元のHTMLは、このファイルの末尾にコメントで残しています。 -->
+  <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="icon-chest" viewBox="0 0 16 16"><path fill="#927044" d="M2 4h12v2H2zM1 6h14v7H1z"/><path fill="#d9b66f" d="M3 3h10v2H3zM2 6h12v2H2zM2 11h12v2H2z"/><path fill="#342b24" d="M2 8h12v2H2zM3 5h1v8H3zM12 5h1v8h-1z"/><path fill="#f8e6ac" d="M7 7h2v4H7z"/></symbol>
+    <symbol id="icon-sound" viewBox="0 0 16 16"><path fill="currentColor" d="M1 6h3V4h2V2h2v12H6v-2H4v-2H1zM10 5h2v6h-2zM13 3h2v10h-2z"/></symbol>
+    <symbol id="icon-back" viewBox="0 0 16 16"><path fill="currentColor" d="M6 2h2v3H6v2h7v2H6v2h2v3H6v-2H4v-2H2V6h2V4h2z"/></symbol>
+  </svg>
+
+  <div class="page-shell">
+    <!-- タイトル、効果音、遊び方のボタン -->
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="お宝探し トップ">
+        <svg class="brand-icon" aria-hidden="true"><use href="#icon-chest"/></svg>
+        <span>お宝探し<span class="brand-en">TREASURE SEEKER</span></span>
+      </a>
+      <nav class="header-actions" aria-label="ゲーム設定">
+        <button class="quiet-button" id="sound-toggle" type="button" aria-pressed="false"><svg aria-hidden="true"><use href="#icon-sound"/></svg><span id="sound-label">音 OFF</span></button>
+        <span class="header-separator" aria-hidden="true"></span>
+        <button class="quiet-button" id="help-open" type="button"><span class="question-icon" aria-hidden="true">?</span>遊び方</button>
+      </nav>
+    </header>
+
     <main>
-        <!-- 残りターン・体力・階層・点数。JavaScript用のIDは元のままです。 -->
-        <section class="head_line" aria-label="ゲームの状態">
-            <div class="head_line_inner">
-                <p class="head_line_inner-text" id="head_line_inner-text">残りターン：5</p>
-                <div class="head_line_box">
-                    <p class="head_line_inner-text">体力：</p>
-                    <div class="life_counter">
-                        <img class="life_counter-icon" id="heart_01" src="./img/svg/heart.svg" alt="ライフカウント用のハート">
-                        <img class="life_counter-icon" id="heart_02" src="./img/svg/heart.svg" alt="ライフカウント用のハート">
-                        <img class="life_counter-icon" id="heart_03" src="./img/svg/heart.svg" alt="ライフカウント用のハート">
-                    </div>
-                </div>
-            </div>
-            <p class="dungeon_number" id="dungeon_number"><span id="floor_num">1</span>階層</p>
-            <p class="points" id="points">保有点数：<span id="points_num">0</span>pt</p>
+      <div class="title-block">
+        <p class="eyebrow"><span aria-hidden="true">◆</span> THE FORGOTTEN RUINS <span aria-hidden="true">◆</span></p>
+        <h1>深淵の分かれ道</h1>
+        <p class="title-sub">欲張るか、引き返すか。選択は、きみの手に。</p>
+      </div>
+
+      <div class="game-window">
+        <!-- 元のJavaScriptが参照する得点・階層・ハートのIDを引き継ぐ -->
+        <section class="status-bar" aria-label="探索の状態">
+          <div class="explorer-status"><img class="adventurer small-sprite" src="./img/svg/adventurer.svg" alt=""><div><span class="status-label">EXPLORER</span><span class="explorer-name">ななしの冒険者</span></div></div>
+          <div class="floor-status"><span class="status-label">現在の階層</span><div class="floor-number">B<span id="floor_num">01</span><span class="floor-max">/ 05</span></div></div>
+          <div class="life-status"><span class="status-label">スタミナ</span><div class="hearts" id="hearts" role="img" aria-label="スタミナ3 / 3"><img id="heart_01" src="./img/svg/heart.svg" alt=""><img id="heart_02" src="./img/svg/heart.svg" alt=""><img id="heart_03" src="./img/svg/heart.svg" alt=""></div></div>
+          <div class="turn-status"><span class="status-label">残りターン</span><div class="turn-display"><span id="head_line_inner-text">5</span><span class="turn-pips" id="turn-pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></div></div>
+          <div class="treasure-status"><span class="status-label">手に入れたお宝</span><div class="treasure-number"><svg aria-hidden="true"><use href="#icon-chest"/></svg><span id="points_num">0000</span><span class="points-unit">pt</span></div></div>
         </section>
 
-        <!-- 道を選ぶ画面：見出しはh1、各道の名前はh2に整理 -->
-        <section class="choise" aria-labelledby="road_title">
-            <h1 class="choise_road" id="road_title">道を選んでください</h1>
-
-            <!-- 元のcoise_boxesをchoise_boxesに、innnerをinnerに統一 -->
-            <div class="choise_boxes">
-                <div class="choise_left">
-                    <h2 class="choise_inner-text">整備された道</h2>
-                    <div class="choise_road_box">
-                        <p class="choise-text" id="choise_left_probability">成功率80%</p>
-                        <p class="choise-text" id="choise_left_points">獲得ポイント10pt</p>
-                    </div>
-                    <button type="button" class="choise_btn" id="button_left">
-                        <img class="choise_btn-img" src="./img/svg/arrow_left.svg" alt="">
-                        <span class="choise_btn-text">左へ進む</span>
-                    </button>
-                </div>
-
-                <div class="choise_right">
-                    <h2 class="choise_inner-text">崩れかけた道</h2>
-                    <div class="choise_road_box">
-                        <p class="choise-text" id="choise_right_probability">成功率60%</p>
-                        <p class="choise-text" id="choise_right_points">獲得ポイント20pt</p>
-                    </div>
-                    <button type="button" class="choise_btn" id="button_right">
-                        <span class="choise_btn-text">右へ進む</span>
-                        <img class="choise_btn-img" src="./img/svg/arrow_right.svg" alt="">
-                    </button>
-                </div>
-            </div>
+        <!-- 背景のドット絵、現在地、終了時のメッセージ -->
+        <section class="dungeon-scene" id="dungeon-scene" aria-label="松明が照らす石造りの遺跡。左には整備された道、右には崩れかけた道が続く。">
+          <img class="dungeon-art" src="./img/dungeon.png" alt="二つの石のアーチが並ぶ、レトロなドット絵のダンジョン" width="1774" height="887" fetchpriority="high">
+          <div class="scene-shading" aria-hidden="true"></div>
+          <div class="scene-location"><span class="location-dot" aria-hidden="true"></span><span id="location-text">地下1階 ― 忘れられた回廊</span></div>
+          <ol class="floor-map" id="floor-map" aria-label="全5階層の進行状況"><li class="current" aria-label="1階層 現在地">1</li><li aria-label="2階層">2</li><li aria-label="3階層">3</li><li aria-label="4階層">4</li><li aria-label="5階層">5</li></ol>
+          <div class="scene-path-label left-path" aria-hidden="true"><span>←</span> 静かな気配</div>
+          <div class="scene-path-label right-path" aria-hidden="true">不穏な気配 <span>→</span></div>
+          <img class="adventurer scene-sprite" src="./img/svg/adventurer.svg" alt="">
+          <div class="ending-banner" id="ending-banner" hidden><span class="ending-ornament" aria-hidden="true">◆ ─── ◆ ─── ◆</span><strong id="ending-title"></strong><span id="ending-subtitle"></span><span class="ending-ornament" aria-hidden="true">◆ ─── ◆ ─── ◆</span></div>
+          <div class="scene-caption" aria-hidden="true">— 道を選び、闇の奥へ —</div>
         </section>
 
-        <!-- 結果が変わったときに読み上げられる表示欄 -->
-        <section aria-label="探索結果">
-            <p id="result" role="status">結果：ここに結果が表示されます</p>
+        <!-- カード全体をボタンにし、元の左右選択の処理につなぐ -->
+        <section class="choices" aria-label="進む道を選ぶ">
+          <button class="route route-left is-selected" id="button_left" type="button">
+            <span class="route-heading"><span class="route-kicker">THE SAFE PATH</span><span class="risk-tag safe">堅実な選択</span></span>
+            <span class="route-name"><span class="route-cursor" aria-hidden="true">▶</span>整備された道</span>
+            <span class="route-description">石段の先に、かすかな灯りが見える。</span>
+            <span class="route-stats"><span class="stat-pair"><span class="stat-label">成功率</span><strong class="safe-value"><span id="choise_left_probability">80</span><span class="unit">%</span></strong></span><span class="stat-divider"></span><span class="stat-pair"><span class="stat-label">獲得ポイント</span><strong class="reward-value"><span id="choise_left_points">10</span><span class="unit">pt</span></strong></span><span class="route-go"><span aria-hidden="true">←</span> 左へ進む</span></span>
+          </button>
+          <button class="route route-right" id="button_right" type="button">
+            <span class="route-heading"><span class="route-kicker">THE RISKY PATH</span><span class="risk-tag risky">一か八かの選択</span></span>
+            <span class="route-name"><span class="route-cursor" aria-hidden="true">▶</span>崩れかけた道</span>
+            <span class="route-description">闇の奥から、何かがきしむ音がする。</span>
+            <span class="route-stats"><span class="stat-pair"><span class="stat-label">成功率</span><strong class="risky-value"><span id="choise_right_probability">60</span><span class="unit">%</span></strong></span><span class="stat-divider"></span><span class="stat-pair"><span class="stat-label">獲得ポイント</span><strong class="reward-value"><span id="choise_right_points">20</span><span class="unit">pt</span></strong></span><span class="route-go">右へ進む <span aria-hidden="true">→</span></span></span>
+          </button>
         </section>
 
-        <!-- 操作ボタン：ボタン本体と、文字用のクラスを分ける -->
-        <section class="btns" aria-label="探索の操作">
-            <button type="button" class="choise_back" id="button_back">
-                <img class="choise_btn-img" src="./img/svg/arrow_back.svg" alt="">
-                <span class="choise_btn-text">入り口へ戻る</span>
-            </button>
-            <button type="button" class="choise_reset" id="button_reset">
-                <span class="choise_btn-text">やり直す</span>
-            </button>
+        <!-- 元の結果欄を、RPGの会話ウィンドウとして表示する -->
+        <section class="message-window" aria-label="探索のメッセージ">
+          <span class="message-label"><span aria-hidden="true">✦</span> 旅の記録</span>
+          <p id="result" role="status" aria-live="polite">古びた扉の向こうに、ふたつの道がある。<br>さあ、どちらの道へ進もうか。</p>
+          <span class="message-continue" aria-hidden="true">▼</span>
         </section>
+
+        <div class="bottom-controls">
+          <div class="return-group"><button class="return-button" id="button_back" type="button"><svg aria-hidden="true"><use href="#icon-back"/></svg>入り口へ戻る</button><p>お宝を失う前に、勇気ある撤退を。</p></div>
+          <button class="reset-button" id="button_reset" type="button"><span aria-hidden="true">↻</span> やり直す</button>
+        </div>
+      </div>
+
+      <div class="keyboard-hints" aria-label="キーボード操作"><span><kbd>←</kbd> <kbd>→</kbd> 道を選ぶ</span><span><kbd>ENTER</kbd> 進む</span><span><kbd>ESC</kbd> 帰還</span><span><kbd>R</kbd> やり直す</span></div>
+      <p class="game-note">スタミナが尽きると、お宝はすべて失われる。<span>最深部の5階層目を突破して、遺跡の謎を解き明かそう。</span></p>
     </main>
+    <footer class="site-footer"><span>EVERY CHOICE HAS ITS PRICE.</span><span>お宝探し <span aria-hidden="true">◆</span> 深淵の分かれ道</span></footer>
+  </div>
 
-    <!-- jQueryを先に読み込み、そのあとに自分のJavaScriptを読み込む -->
-    <script src="./JavaScript/vendor/jquery-3.7.1.min.js"></script>
-    <script src="./JavaScript/script.js"></script>
+  <dialog id="help-dialog" class="help-dialog" aria-labelledby="help-title">
+    <div class="help-inner"><p class="eyebrow">HOW TO PLAY</p><h2 id="help-title">遺跡を探索するきみへ</h2><p>左の道は成功しやすく、右の道は危険なぶん、多くのお宝が眠っている。</p><ol><li>道を選ぶたび、1ターンを消費する。</li><li>成功するとお宝を獲得し、次の階層へ進む。</li><li>失敗するとスタミナが1つ減る。同じ階層で再挑戦だ。</li><li>5階層目で成功すればクリア。探索は全部で5ターンまで。</li><li>スタミナが尽きるとお宝はすべて没収。途中で帰還すれば、今あるお宝を持ち帰れる。</li></ol><p class="help-footnote">ターン切れでも、スタミナが残っていればお宝を持ち帰れる。</p><button id="help-close" class="return-button" type="button">わかった、冒険へ戻る</button></div>
+  </dialog>
+  <!-- 画面の演出を準備してから、元のゲーム処理を読み込む。 -->
+  <script src="./JavaScript/vendor/jquery-3.7.1.min.js"></script>
+  <script src="./JavaScript/screen.js"></script>
+  <script src="./JavaScript/script.js"></script>
 </body>
 </html>
-
-<!--
-===== 整理前：Junkiさんの元のHTML（比較用・実行されません） =====
-元からあったコメントの開始・終了記号だけ、入れ子を避けるため日本語の目印に変えています。
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="./css/reset.css">
-    <link rel="stylesheet" href="./css/style.css">
-    <title>お宝探しゲーム</title>
-</head>
-<body>
-    <section class=head_line>
-
-        <div class="head_line_inner">
-            <p class="head_line_inner-text" id="head_line_inner-text">残りターン：5</p>
-            <div class="head_line_box">
-                <p class="head_line_inner-text">体力：</p>
-                <div class="life_counter">
-                    <img class="life_counter-icon" id="heart_01" src="./img/svg/heart.svg" alt="ライフカウント用のハート">
-                    <img class="life_counter-icon" id="heart_02" src="./img/svg/heart.svg" alt="ライフカウント用のハート">
-                    <img class="life_counter-icon" id="heart_03" src="./img/svg/heart.svg" alt="ライフカウント用のハート">
-                </div>
-            </div>
-        </div>
-
-        <p class="dungeon_number" id="dungeon_number">1階層</p>
-        <p class="points" id="points">保有点数：0pt</p>
-
-    </section>
-
-    <section class="choise">
-
-        <p class="choise_road">道を選んでください</p>
-
-        <div class="coise_boxes">
-            <div class="choise_left">
-                <p class="choise_innner-text">整備された道</p>
-                <div class="choise_road_box">
-                    <p class="choise-text" id="choise_left_probability">成功率80%</p>
-                    <p class="choise-text" id="choise_left_points">獲得ポイント10pt</p>
-                </div>
-                <button type="button" class="choise_btn" id="button_left">
-                    <img class="choise_btn-img" src="./img/svg/arrow_left.svg" alt="左向き矢印">
-                    <span class="choise_btn-text">左へ進む</span>
-                </button>
-            </div>
-
-            <div class="choise_right">
-                <p class="choise_innner-text">崩れかけた道</p>
-                <div class="choise_road_box">
-                    <p class="choise-text" id="choise_right_probability">成功率60%</p>
-                    <p class="choise-text" id="choise_right_points">獲得ポイント20pt</p>
-                </div>
-                <button type="button" class="choise_btn" id="button_right">
-                    <span class="choise_btn-text">右へ進む</span>
-                    <img class="choise_btn-img" src="./img/svg/arrow_right.svg" alt="右向き矢印">
-                </button>
-            </div>            
-        </div>
- 
-    </section>
-
-    <section>
-        <p id="result">結果：ここに結果が表示されます</p>
-    </section>
-
-    <section class="btns">
-        <button type="button" class="choise_back" id="button_back">
-            <img class="choise_btn-img" src="./img/svg/arrow_back.svg" alt="下向きの矢印">
-            <span class="choise_btn-text">入り口へ戻る</span>
-        </button>
-        <button type="button" class="choise_btn-text" id="button_reset">やり直す</button>
-    </section>
-
-    [元のコメント開始] JavaScriptのお作法 [元のコメント終了]
-    <script src="./JavaScript/vendor/jquery-3.7.1.min.js"></script>
-    <script src="./JavaScript/script.js"></script>
-
-</body>
-</html>
-===== 整理前のHTMLここまで =====
--->

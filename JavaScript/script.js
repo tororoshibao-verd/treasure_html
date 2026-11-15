@@ -4,7 +4,7 @@ $(function () {
     const MAX_TURNS = 5;
     const MAX_FLOOR = 5;
     const MAX_LIFE = 3;
-    const INITIAL_MESSAGE = "結果：ここに結果が表示されます";
+    const INITIAL_MESSAGE = "古びた扉の向こうに、ふたつの道がある。<br>さあ、どちらの道へ進もうか。";
 
     // letはプレイ中に変わるデータ。画面はこれらの値をもとに更新する。
     let gameCount = 0;                       // 道を選んだ回数（成功・失敗の両方を数える）
@@ -12,12 +12,14 @@ $(function () {
     let lifeCount = MAX_LIFE;                // 残りスタミナ
     let points = 0;                          // 今回の探索で集めたポイント
     let isFinished = false;                 // false：探索中、true：終了済み
+    let endingType = null;                  // 終わり方。画面の演出にだけ使う。
     let resultMessage = INITIAL_MESSAGE;    // 結果欄に表示する文章
 
     // directionには"left"か"right"が入る。
     // 現在の階層に応じた成功率と獲得ポイントを、1つのオブジェクトにして返す。
     // 抽選と画面表示の両方で使い、表示と実際の判定が食い違わないようにする。
     function getRoadInfo(direction) {
+        // 左の道は、これまでと同じ計算式を使う。
         if (direction === "left") {
             return {
                 successRate: 80 - (floorCount - 1) * 5,
@@ -25,18 +27,26 @@ $(function () {
             };
         }
 
-        return {
-            successRate: 60 - (floorCount - 1) * 10,
-            successPoints: floorCount * 20
-        };
+        // 右の道は、階層ごとに成功率とポイントを設定する。
+        const rightRoads = [
+            { successRate: 50, successPoints: 20 },  // 第1層
+            { successRate: 30, successPoints: 40 },  // 第2層
+            { successRate: 10, successPoints: 60 },  // 第3層
+            { successRate: 5,  successPoints: 120 }, // 第4層
+            { successRate: 2,  successPoints: 240 }  // 第5層
+        ];
+
+        // 配列は0番目から始まるため、階層から1を引いて取り出す。
+        return rightRoads[floorCount - 1];
     }
 
     // 変数の値を変えただけではHTMLは変わらないため、この関数で画面に反映する。
     // 探索後もやり直し時も同じ関数を呼び、更新し忘れる項目が出ないようにする。
     function updateDisplay() {
-        $("#points_num").text(points);
-        $("#floor_num").text(floorCount);
-        $("#head_line_inner-text").text("残りターン：" + (MAX_TURNS - gameCount));
+        // 桁を0で埋め、提案デザインに合わせて「0000 pt」「B01」の形にする。
+        $("#points_num").text(String(points).padStart(4, "0"));
+        $("#floor_num").text(String(floorCount).padStart(2, "0"));
+        $("#head_line_inner-text").text(MAX_TURNS - gameCount);
         $("#result").html(resultMessage); // 結果の文章には改行用の<br>があるためhtml()を使う。
 
         // ハートを1個目から順に確認し、残りスタミナ分だけ色付き画像にする。
@@ -49,12 +59,21 @@ $(function () {
         // forEachで左・右の順に同じ表示更新を行う。
         ["left", "right"].forEach(function (direction) {
             const road = getRoadInfo(direction);
-            $("#choise_" + direction + "_probability").text("成功率" + road.successRate + "%");
-            $("#choise_" + direction + "_points").text("獲得ポイント" + road.successPoints + "pt");
+            // ラベルと単位はHTMLに置き、この処理では数字の部分だけを更新する。
+            $("#choise_" + direction + "_probability").text(road.successRate);
+            $("#choise_" + direction + "_points").text(road.successPoints);
         });
 
         // disabledがtrueなら操作不可、falseなら操作可能。やり直すボタンは常に使える。
         $("#button_left, #button_right, #button_back").prop("disabled", isFinished);
+
+        // 画面専用の処理に現在の状態を渡す。ゲームの判定はこのファイルで管理する。
+        // screen.jsがなくても、得点や終了判定などの基本処理は動作する。
+        if (typeof window !== "undefined" && window.gameScreen) {
+            window.gameScreen.update({
+                floorCount, lifeCount, points, gameCount, isFinished, endingType
+            });
+        }
     }
 
     // 左右どちらのボタンからも呼ばれる、1ターン分の探索処理。
@@ -77,6 +96,7 @@ $(function () {
             // 5階層目の探索に成功したら、6階層へ進まずにクリアする。
             if (floorCount === MAX_FLOOR) {
                 isFinished = true;
+                endingType = "cleared";
                 resultMessage = "ゲームクリア！" + MAX_FLOOR + "階層を制覇！<br>獲得点数は" + points + "ptでした";
             } else {
                 floorCount += 1;
@@ -92,10 +112,12 @@ $(function () {
         if (lifeCount <= 0) {
             points = 0;
             isFinished = true;
+            endingType = "dead";
             resultMessage = "ゲームオーバー！体力がなくなった！<br>獲得点数は0ptでした";
         } else if (!isFinished && gameCount >= MAX_TURNS) {
             // !isFinishedは「まだ終了していない」。最終ターンのクリア表示を上書きしない。
             isFinished = true;
+            endingType = "exhausted";
             resultMessage = MAX_TURNS + "ターンの探索が終了！<br>獲得点数は" + points + "ptでした";
         }
 
@@ -119,6 +141,7 @@ $(function () {
         }
 
         isFinished = true;
+        endingType = "escaped";
         resultMessage = "入り口へ戻りました。到達階層は" + floorCount + "階層<br>持ち帰った点数は" + points + "ptでした";
         updateDisplay();
     });
@@ -130,6 +153,7 @@ $(function () {
         lifeCount = MAX_LIFE;
         points = 0;
         isFinished = false;
+        endingType = null;
         resultMessage = INITIAL_MESSAGE;
         // ハート・点数などを戻すと同時に、探索と帰還のボタンを再び使えるようにする。
         updateDisplay();

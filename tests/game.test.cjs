@@ -16,6 +16,7 @@ function createGame() {
         match[1], { content: "", attributes: {}, properties: { disabled: false }, handlers: {} }
     ]));
     let roll = 1;
+    let screenState;
 
     function $(selector) {
         if (typeof selector === "function") {
@@ -57,7 +58,10 @@ function createGame() {
 
     const controlledMath = Object.create(Math);
     controlledMath.random = () => (roll - 0.5) / 100;
-    vm.runInNewContext(script, { $, Math: controlledMath });
+    vm.runInNewContext(script, {
+        $, Math: controlledMath,
+        window: { gameScreen: { update(state) { screenState = JSON.parse(JSON.stringify(state)); } } }
+    });
 
     function click(id, force = false) {
         const element = elements.get(id);
@@ -70,6 +74,7 @@ function createGame() {
 
     return {
         click,
+        screenState: () => screenState,
         choose(direction, nextRoll = 1) {
             roll = nextRoll;
             click("button_" + direction);
@@ -86,6 +91,7 @@ function createGame() {
 function assertFinished(game) {
     explorationButtons.forEach((id) => assert.equal(game.disabled(id), true, id));
     assert.equal(game.disabled("button_reset"), false);
+    assert.equal(game.screenState().isFinished, true);
     const result = game.snapshot();
     // 無効化済みのボタンにイベントが直接届いても状態を維持する。
     explorationButtons.forEach((id) => game.click(id, true));
@@ -94,11 +100,12 @@ function assertFinished(game) {
 
 test("初期状態は1階層・スタミナ3・0pt・残り5ターン", () => {
     const game = createGame();
-    assert.equal(game.read("floor_num"), "1");
-    assert.equal(game.read("points_num"), "0");
-    assert.equal(game.read("head_line_inner-text"), "残りターン：5");
-    assert.equal(game.read("result"), "結果：ここに結果が表示されます");
+    assert.equal(game.read("floor_num"), "01");
+    assert.equal(game.read("points_num"), "0000");
+    assert.equal(game.read("head_line_inner-text"), "5");
+    assert.equal(game.read("result"), "古びた扉の向こうに、ふたつの道がある。<br>さあ、どちらの道へ進もうか。");
     assert.deepEqual(game.hearts(), Array(3).fill("./img/svg/heart.svg"));
+    assert.equal(game.screenState().endingType, null);
     [...explorationButtons, "button_reset"].forEach((id) => assert.equal(game.disabled(id), false));
 });
 
@@ -110,12 +117,13 @@ for (const [direction, rates, totals] of [
         const game = createGame();
         rates.forEach((rate, turn) => {
             game.choose(direction, rate);
-            assert.equal(game.read("points_num"), String(totals[turn]));
-            assert.equal(game.read("floor_num"), String([2, 3, 4, 5, 5][turn]));
-            assert.equal(game.read("head_line_inner-text"), "残りターン：" + (4 - turn));
+            assert.equal(game.read("points_num"), String(totals[turn]).padStart(4, "0"));
+            assert.equal(game.read("floor_num"), String([2, 3, 4, 5, 5][turn]).padStart(2, "0"));
+            assert.equal(game.read("head_line_inner-text"), String(4 - turn));
             assert.equal(game.disabled("button_left"), turn === 4);
         });
         assert.match(game.read("result"), /ゲームクリア！5階層を制覇/);
+        assert.equal(game.screenState().endingType, "cleared");
         assert.doesNotMatch(game.read("result"), /探索が終了/);
         assertFinished(game);
     });
@@ -127,13 +135,13 @@ for (const [direction, rates, totals] of [
                 game.choose(direction);
             }
             const previousPoints = game.read("points_num");
-            assert.equal(game.read("choise_" + direction + "_probability"), "成功率" + rate + "%");
-            assert.equal(game.read("choise_" + direction + "_points"), "獲得ポイント" + (index + 1) * (direction === "left" ? 10 : 20) + "pt");
+            assert.equal(game.read("choise_" + direction + "_probability"), String(rate));
+            assert.equal(game.read("choise_" + direction + "_points"), String((index + 1) * (direction === "left" ? 10 : 20)));
             game.choose(direction, rate + 1);
-            assert.equal(game.read("floor_num"), String(index + 1));
+            assert.equal(game.read("floor_num"), String(index + 1).padStart(2, "0"));
             assert.equal(game.read("points_num"), previousPoints);
             assert.deepEqual(game.hearts(), ["./img/svg/heart.svg", "./img/svg/heart.svg", "./img/svg/heart_none.svg"]);
-            assert.equal(game.read("head_line_inner-text"), "残りターン：" + (4 - index));
+            assert.equal(game.read("head_line_inner-text"), String(4 - index));
         });
     });
 }
@@ -142,31 +150,32 @@ test("左右を切り替えた場合も現在の階層のポイントが加算�
     const game = createGame();
     game.choose("left");
     game.choose("right");
-    assert.equal(game.read("floor_num"), "3");
-    assert.equal(game.read("points_num"), "50");
-    assert.equal(game.read("choise_left_probability"), "成功率70%");
-    assert.equal(game.read("choise_right_probability"), "成功率40%");
-    assert.equal(game.read("choise_left_points"), "獲得ポイント30pt");
-    assert.equal(game.read("choise_right_points"), "獲得ポイント60pt");
+    assert.equal(game.read("floor_num"), "03");
+    assert.equal(game.read("points_num"), "0050");
+    assert.equal(game.read("choise_left_probability"), "70");
+    assert.equal(game.read("choise_right_probability"), "40");
+    assert.equal(game.read("choise_left_points"), "30");
+    assert.equal(game.read("choise_right_points"), "60");
 });
 
 test("スタミナ切れで獲得済みポイントをすべて没収して終了", () => {
     const game = createGame();
     game.choose("right");
     [1, 2, 3].forEach(() => game.choose("left", 100));
-    assert.equal(game.read("points_num"), "0");
-    assert.equal(game.read("floor_num"), "2");
-    assert.equal(game.read("head_line_inner-text"), "残りターン：1");
+    assert.equal(game.read("points_num"), "0000");
+    assert.equal(game.read("floor_num"), "02");
+    assert.equal(game.read("head_line_inner-text"), "1");
     assert.deepEqual(game.hearts(), Array(3).fill("./img/svg/heart_none.svg"));
     assert.match(game.read("result"), /ゲームオーバー/);
+    assert.equal(game.screenState().endingType, "dead");
     assertFinished(game);
 });
 
 test("5ターン目にスタミナが尽きた場合もゲームオーバーとポイント没収が優先される", () => {
     const game = createGame();
     [1, 1, 100, 100, 100].forEach((roll) => game.choose("left", roll));
-    assert.equal(game.read("points_num"), "0");
-    assert.equal(game.read("head_line_inner-text"), "残りターン：0");
+    assert.equal(game.read("points_num"), "0000");
+    assert.equal(game.read("head_line_inner-text"), "0");
     assert.match(game.read("result"), /ゲームオーバー/);
     assert.doesNotMatch(game.read("result"), /探索が終了/);
     assertFinished(game);
@@ -175,9 +184,10 @@ test("5ターン目にスタミナが尽きた場合もゲームオーバーと�
 test("5階層目で失敗してターン切れになった場合はクリア扱いにせずポイントを維持", () => {
     const game = createGame();
     [1, 1, 1, 1, 100].forEach((roll) => game.choose("left", roll));
-    assert.equal(game.read("floor_num"), "5");
-    assert.equal(game.read("points_num"), "100");
+    assert.equal(game.read("floor_num"), "05");
+    assert.equal(game.read("points_num"), "0100");
     assert.match(game.read("result"), /5ターンの探索が終了/);
+    assert.equal(game.screenState().endingType, "exhausted");
     assert.doesNotMatch(game.read("result"), /ゲームクリア/);
     assertFinished(game);
 });
@@ -185,8 +195,8 @@ test("5階層目で失敗してターン切れになった場合はクリア扱�
 test("5ターン目に途中の階層で成功しても、最終階層を探索していなければターン切れ", () => {
     const game = createGame();
     [100, 1, 1, 1, 1].forEach((roll) => game.choose("left", roll));
-    assert.equal(game.read("floor_num"), "5");
-    assert.equal(game.read("points_num"), "100");
+    assert.equal(game.read("floor_num"), "05");
+    assert.equal(game.read("points_num"), "0100");
     assert.match(game.read("result"), /5ターンの探索が終了/);
     assert.doesNotMatch(game.read("result"), /ゲームクリア/);
     assertFinished(game);
@@ -198,18 +208,19 @@ test("途中で帰還すると残りターン・スタミナ・ポイントを�
     game.choose("right", 100);
     const hearts = game.hearts();
     game.click("button_back");
-    assert.equal(game.read("floor_num"), "2");
-    assert.equal(game.read("points_num"), "10");
-    assert.equal(game.read("head_line_inner-text"), "残りターン：3");
+    assert.equal(game.read("floor_num"), "02");
+    assert.equal(game.read("points_num"), "0010");
+    assert.equal(game.read("head_line_inner-text"), "3");
     assert.deepEqual(game.hearts(), hearts);
     assert.match(game.read("result"), /到達階層は2階層.*持ち帰った点数は10pt/);
+    assert.equal(game.screenState().endingType, "escaped");
     assertFinished(game);
 });
 
 test("開始直後でも0ptで帰還できる", () => {
     const game = createGame();
     game.click("button_back");
-    assert.equal(game.read("head_line_inner-text"), "残りターン：5");
+    assert.equal(game.read("head_line_inner-text"), "5");
     assert.match(game.read("result"), /到達階層は1階層.*持ち帰った点数は0pt/);
     assertFinished(game);
 });
@@ -227,11 +238,14 @@ for (const [name, prepare] of [
         prepare(game);
         game.click("button_reset");
         assert.deepEqual(game.snapshot(), initial);
+        assert.deepEqual(game.screenState(), {
+            floorCount: 1, lifeCount: 3, points: 0, gameCount: 0, isFinished: false, endingType: null
+        });
         game.click("button_reset");
         assert.deepEqual(game.snapshot(), initial);
         game.choose("right");
-        assert.equal(game.read("floor_num"), "2");
-        assert.equal(game.read("points_num"), "20");
+        assert.equal(game.read("floor_num"), "02");
+        assert.equal(game.read("points_num"), "0020");
         game.click("button_back");
         assert.match(game.read("result"), /持ち帰った点数は20pt/);
         assertFinished(game);
