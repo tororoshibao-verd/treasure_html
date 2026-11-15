@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="./css/reset.css">
+    <link rel="stylesheet" href="./css/style.css">
+    <title>お宝探しゲーム</title>
+</head>
+<body>
+    <!-- 整理後：元のHTMLは、このファイルの末尾にコメントで残しています。 -->
+    <main>
+        <!-- 残りターン・体力・階層・点数。JavaScript用のIDは元のままです。 -->
+        <section class="head_line" aria-label="ゲームの状態">
+            <div class="head_line_inner">
+                <p class="head_line_inner-text" id="head_line_inner-text">残りターン：5</p>
+                <div class="head_line_box">
+                    <p class="head_line_inner-text">体力：</p>
+                    <div class="life_counter">
+                        <img class="life_counter-icon" id="heart_01" src="./img/svg/heart.svg" alt="ライフカウント用のハート">
+                        <img class="life_counter-icon" id="heart_02" src="./img/svg/heart.svg" alt="ライフカウント用のハート">
+                        <img class="life_counter-icon" id="heart_03" src="./img/svg/heart.svg" alt="ライフカウント用のハート">
+                    </div>
+                </div>
+            </div>
+            <p class="dungeon_number" id="dungeon_number"><span id="floor_num">1</span>階層</p>
+            <p class="points" id="points">保有点数：<span id="points_num">0</span>pt</p>
+        </section>
+
+        <!-- 道を選ぶ画面：見出しはh1、各道の名前はh2に整理 -->
+        <section class="choise" aria-labelledby="road_title">
+            <h1 class="choise_road" id="road_title">道を選んでください</h1>
+
+            <!-- 元のcoise_boxesをchoise_boxesに、innnerをinnerに統一 -->
+            <div class="choise_boxes">
+                <div class="choise_left">
+                    <h2 class="choise_inner-text">整備された道</h2>
+                    <div class="choise_road_box">
+                        <p class="choise-text" id="choise_left_probability">成功率80%</p>
+                        <p class="choise-text" id="choise_left_points">獲得ポイント10pt</p>
+                    </div>
+                    <button type="button" class="choise_btn" id="button_left">
+                        <img class="choise_btn-img" src="./img/svg/arrow_left.svg" alt="">
+                        <span class="choise_btn-text">左へ進む</span>
+                    </button>
+                </div>
+
+                <div class="choise_right">
+                    <h2 class="choise_inner-text">崩れかけた道</h2>
+                    <div class="choise_road_box">
+                        <p class="choise-text" id="choise_right_probability">成功率60%</p>
+                        <p class="choise-text" id="choise_right_points">獲得ポイント20pt</p>
+                    </div>
+                    <button type="button" class="choise_btn" id="button_right">
+                        <span class="choise_btn-text">右へ進む</span>
+                        <img class="choise_btn-img" src="./img/svg/arrow_right.svg" alt="">
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 結果が変わったときに読み上げられる表示欄 -->
+        <section aria-label="探索結果">
+            <p id="result" role="status">結果：ここに結果が表示されます</p>
+        </section>
+
+        <!-- 操作ボタン：ボタン本体と、文字用のクラスを分ける -->
+        <section class="btns" aria-label="探索の操作">
+            <button type="button" class="choise_back" id="button_back">
+                <img class="choise_btn-img" src="./img/svg/arrow_back.svg" alt="">
+                <span class="choise_btn-text">入り口へ戻る</span>
+            </button>
+            <button type="button" class="choise_reset" id="button_reset">
+                <span class="choise_btn-text">やり直す</span>
+            </button>
+        </section>
+    </main>
+
+    <!-- jQueryを先に読み込み、そのあとに自分のJavaScriptを読み込む -->
+    <script src="./JavaScript/vendor/jquery-3.7.1.min.js"></script>
+    <script src="./JavaScript/script.js"></script>
+</body>
+</html>
+
+<!--
+===== 整理前：Junkiさんの元のHTML（比較用・実行されません） =====
+元からあったコメントの開始・終了記号だけ、入れ子を避けるため日本語の目印に変えています。
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/reset.css">
+    <link rel="stylesheet" href="./css/style.css">
+    <title>お宝探しゲーム</title>
+</head>
+<body>
+    <section class=head_line>
+
+        <div class="head_line_inner">
+            <p class="head_line_inner-text" id="head_line_inner-text">残りターン：5</p>
+            <div class="head_line_box">
+                <p class="head_line_inner-text">体力：</p>
+                <div class="life_counter">
+                    <img class="life_counter-icon" id="heart_01" src="./img/svg/heart.svg" alt="ライフカウント用のハート">
+                    <img class="life_counter-icon" id="heart_02" src="./img/svg/heart.svg" alt="ライフカウント用のハート">
+                    <img class="life_counter-icon" id="heart_03" src="./img/svg/heart.svg" alt="ライフカウント用のハート">
+                </div>
+            </div>
+        </div>
+
+        <p class="dungeon_number" id="dungeon_number">1階層</p>
+        <p class="points" id="points">保有点数：0pt</p>
+
+    </section>
+
+    <section class="choise">
+
+        <p class="choise_road">道を選んでください</p>
+
+        <div class="coise_boxes">
+            <div class="choise_left">
+                <p class="choise_innner-text">整備された道</p>
+                <div class="choise_road_box">
+                    <p class="choise-text" id="choise_left_probability">成功率80%</p>
+                    <p class="choise-text" id="choise_left_points">獲得ポイント10pt</p>
+                </div>
+                <button type="button" class="choise_btn" id="button_left">
+                    <img class="choise_btn-img" src="./img/svg/arrow_left.svg" alt="左向き矢印">
+                    <span class="choise_btn-text">左へ進む</span>
+                </button>
+            </div>
+
+            <div class="choise_right">
+                <p class="choise_innner-text">崩れかけた道</p>
+                <div class="choise_road_box">
+                    <p class="choise-text" id="choise_right_probability">成功率60%</p>
+                    <p class="choise-text" id="choise_right_points">獲得ポイント20pt</p>
+                </div>
+                <button type="button" class="choise_btn" id="button_right">
+                    <span class="choise_btn-text">右へ進む</span>
+                    <img class="choise_btn-img" src="./img/svg/arrow_right.svg" alt="右向き矢印">
+                </button>
+            </div>            
+        </div>
+ 
+    </section>
+
+    <section>
+        <p id="result">結果：ここに結果が表示されます</p>
+    </section>
+
+    <section class="btns">
+        <button type="button" class="choise_back" id="button_back">
+            <img class="choise_btn-img" src="./img/svg/arrow_back.svg" alt="下向きの矢印">
+            <span class="choise_btn-text">入り口へ戻る</span>
+        </button>
+        <button type="button" class="choise_btn-text" id="button_reset">やり直す</button>
+    </section>
+
+    [元のコメント開始] JavaScriptのお作法 [元のコメント終了]
+    <script src="./JavaScript/vendor/jquery-3.7.1.min.js"></script>
+    <script src="./JavaScript/script.js"></script>
+
+</body>
+</html>
+===== 整理前のHTMLここまで =====
+-->
