@@ -46,8 +46,13 @@ button {
     transition: opacity 0.2s;
 }
 
-button:hover {
+button:enabled:hover {
     opacity: 0.8;
+}
+
+button:disabled {
+    opacity: 0.4;
+    cursor: default;
 }
 
 .choise_btn-text {
