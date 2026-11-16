@@ -109,21 +109,23 @@ test("初期状態は1階層・スタミナ3・0pt・残り5ターン", () => {
     [...explorationButtons, "button_reset"].forEach((id) => assert.equal(game.disabled(id), false));
 });
 
-for (const [direction, rates, totals] of [
-    ["left", [80, 75, 70, 65, 60], [10, 30, 60, 100, 150]],
-    ["right", [60, 50, 40, 30, 20], [20, 60, 120, 200, 300]]
+for (const [direction, rates, totals, rewards] of [
+    ["left", [80, 75, 70, 65, 60], [10, 30, 60, 100, 150], [10, 20, 30, 40, 50]],
+    ["right", [50, 30, 10, 5, 2], [20, 60, 120, 240, 480], [20, 40, 60, 120, 240]]
 ]) {
-    test(direction + ": 成功率ちょうどの乱数は成功し、5階層目でポイントを加算してクリア", () => {
+    test(direction + ": 成功率ちょうどの乱数は成功し、第5階層の報酬を加算して第6階層でクリア", () => {
         const game = createGame();
         rates.forEach((rate, turn) => {
             game.choose(direction, rate);
             assert.equal(game.read("points_num"), String(totals[turn]).padStart(4, "0"));
-            assert.equal(game.read("floor_num"), String([2, 3, 4, 5, 5][turn]).padStart(2, "0"));
+            assert.equal(game.read("floor_num"), String([2, 3, 4, 5, 6][turn]).padStart(2, "0"));
             assert.equal(game.read("head_line_inner-text"), String(4 - turn));
             assert.equal(game.disabled("button_left"), turn === 4);
         });
         assert.match(game.read("result"), /ゲームクリア！5階層を制覇/);
         assert.equal(game.screenState().endingType, "cleared");
+        assert.equal(game.screenState().floorCount, 6);
+        assert.match(game.read("result"), /天空の庭園/);
         assert.doesNotMatch(game.read("result"), /探索が終了/);
         assertFinished(game);
     });
@@ -136,7 +138,7 @@ for (const [direction, rates, totals] of [
             }
             const previousPoints = game.read("points_num");
             assert.equal(game.read("choise_" + direction + "_probability"), String(rate));
-            assert.equal(game.read("choise_" + direction + "_points"), String((index + 1) * (direction === "left" ? 10 : 20)));
+            assert.equal(game.read("choise_" + direction + "_points"), String(rewards[index]));
             game.choose(direction, rate + 1);
             assert.equal(game.read("floor_num"), String(index + 1).padStart(2, "0"));
             assert.equal(game.read("points_num"), previousPoints);
@@ -153,7 +155,7 @@ test("左右を切り替えた場合も現在の階層のポイントが加算�
     assert.equal(game.read("floor_num"), "03");
     assert.equal(game.read("points_num"), "0050");
     assert.equal(game.read("choise_left_probability"), "70");
-    assert.equal(game.read("choise_right_probability"), "40");
+    assert.equal(game.read("choise_right_probability"), "10");
     assert.equal(game.read("choise_left_points"), "30");
     assert.equal(game.read("choise_right_points"), "60");
 });

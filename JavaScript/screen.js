@@ -5,7 +5,7 @@
         return document.getElementById(id);
     };
     const locationNames = [
-        "忘れられた回廊", "苔むした石室", "ささやきの祭壇", "封じられた門", "深淵の宝物庫"
+        "忘却の回廊", "	古王の石室", "王家の祭壇", "黄金の大広間", "黄金の間", "天空の庭園"
     ];
     const endingMessages = {
         cleared: ["GAME CLEAR", "深淵の宝を、その手に。"],
@@ -13,10 +13,87 @@
         escaped: ["WELCOME HOME", "お宝とともに、無事に帰還。"],
         exhausted: ["EXPLORATION END", "松明が消える前に、帰ろう。"]
     };
+    const floorBackgroundFiles = [
+        "./img/dungeon.png",
+        "./img/dungeon-floor-2.png",
+        "./img/dungeon-floor-3.png",
+        "./img/dungeon-floor-4.png",
+        "./img/dungeon-floor-5.png",
+        "./img/dungeon-floor-6.png"
+    ];
+    // 次の階層の画像を先に読み込み、画像が表示されるまでの待ち時間を減らす。
+    const floorBackgroundImages = floorBackgroundFiles.map(function (file) {
+        const image = new Image();
+        image.src = file;
+        return image;
+    });
     let selectedDirection = "left";
     let previousState = null;
     let soundEnabled = false;
     let audioContext;
+    let isChangingFloor = false;
+    let backgroundChangeId = 0;
+
+    function wait(milliseconds) {
+        return new Promise(function (resolve) {
+            setTimeout(resolve, milliseconds);
+        });
+    }
+
+    function setExplorationDisabled(disabled) {
+        ["button_left", "button_right", "button_back"].forEach(function (id) {
+            getElement(id).disabled = disabled;
+        });
+    }
+
+    // 完全に暗くなったところで画像を差し替え、少し待ってから明るさを戻す。
+    async function changeFloorBackground(floorCount, useBlackout) {
+        const changeId = ++backgroundChangeId;
+        const scene = getElement("dungeon-scene");
+        const image = getElement("dungeon-art");
+        const blackout = getElement("scene-blackout");
+        const background = floorBackgroundImages[floorCount - 1];
+        const imageDescription = "第" + floorCount + "階層 " + locationNames[floorCount - 1].trim() + "の背景";
+        scene.classList.remove("scene-flash");
+
+        if (!useBlackout) {
+            image.src = background.src;
+            image.alt = imageDescription;
+            return;
+        }
+
+        isChangingFloor = true;
+        setExplorationDisabled(true);
+        blackout.classList.add("is-dark");
+        await Promise.all([
+            wait(160),
+            background.decode().catch(function () {
+                // 読み込みに失敗した場合も、暗転を解除できるようにする。
+            })
+        ]);
+        // やり直しなどで新しい切り替えが始まっていたら、古い処理を終える。
+        if (changeId !== backgroundChangeId) {
+            return;
+        }
+
+        image.src = background.src;
+        image.alt = imageDescription;
+        await wait(120);
+        if (changeId !== backgroundChangeId) {
+            return;
+        }
+
+        // 到達した背景と一緒に終了メッセージを見せる。
+        getElement("ending-banner").hidden = !previousState.isFinished;
+        blackout.classList.remove("is-dark");
+        await wait(160);
+        if (changeId !== backgroundChangeId) {
+            return;
+        }
+
+        isChangingFloor = false;
+        setExplorationDisabled(previousState.isFinished);
+    }
 
     // 効果音は、ユーザーが「音 ON」を選んだ後だけ鳴らす。
     // 音源ファイルを使わず、Web Audio APIで短いレトロな音を作る。
@@ -67,8 +144,13 @@
     // script.jsから受け取った状態で、背景上の現在地や終了演出を更新する。
     function updateScreen(state) {
         const scene = getElement("dungeon-scene");
+        const floorChanged = !previousState || state.floorCount !== previousState.floorCount;
+        if (floorChanged) {
+            changeFloorBackground(state.floorCount, previousState !== null);
+        }
         getElement("hearts").setAttribute("aria-label", "スタミナ" + state.lifeCount + " / 3");
-        getElement("location-text").textContent = "地下" + state.floorCount + "階 ― " + locationNames[state.floorCount - 1];
+        getElement("location-text").textContent = "第" + state.floorCount + "階層 ― " + locationNames[state.floorCount - 1];
+        scene.setAttribute("aria-label", "第" + state.floorCount + "階層 " + locationNames[state.floorCount - 1].trim() + "の風景");
         getElement("turn-pips").querySelectorAll("i").forEach(function (pip, index) {
             pip.classList.toggle("spent", index >= 5 - state.gameCount);
         });
@@ -79,7 +161,8 @@
             floor.setAttribute("aria-label", (index + 1) + "階層" + (isCurrent ? " 現在地" : ""));
         });
 
-        getElement("ending-banner").hidden = !state.isFinished;
+        getElement("route-choices").hidden = state.endingType === "cleared";
+        getElement("ending-banner").hidden = !state.isFinished || isChangingFloor;
         if (state.endingType) {
             scene.dataset.ending = state.endingType;
             getElement("ending-title").textContent = endingMessages[state.endingType][0];
@@ -91,10 +174,12 @@
         if (previousState && state.gameCount > previousState.gameCount) {
             // 前回からターンが増えたときだけ、成功・失敗に応じた演出を行う。
             playTone(state.endingType === "cleared" ? "clear" : state.lifeCount < previousState.lifeCount ? "fail" : "success");
-            scene.classList.remove("scene-flash");
-            // 一度レイアウトを読み取り、連続クリックでもアニメーションを再開する。
-            void scene.offsetWidth;
-            scene.classList.add("scene-flash");
+            if (!floorChanged && !isChangingFloor) {
+                scene.classList.remove("scene-flash");
+                // 一度レイアウトを読み取り、連続クリックでもアニメーションを再開する。
+                void scene.offsetWidth;
+                scene.classList.add("scene-flash");
+            }
         } else if (state.endingType === "escaped" && previousState && !previousState.isFinished) {
             playTone("back");
         }
@@ -104,6 +189,10 @@
             scene.classList.remove("scene-flash");
         }
         previousState = { ...state };
+        // 暗転中にやり直した場合も、次の背景が見えるまで移動操作を待つ。
+        if (isChangingFloor) {
+            setExplorationDisabled(true);
+        }
     }
 
     ["left", "right"].forEach(function (direction) {

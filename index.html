@@ -43,7 +43,7 @@
         <!-- 元のJavaScriptが参照する得点・階層・ハートのIDを引き継ぐ -->
         <section class="status-bar" aria-label="探索の状態">
           <div class="explorer-status"><img class="adventurer small-sprite" src="./img/svg/adventurer.svg" alt=""><div><span class="status-label">EXPLORER</span><span class="explorer-name">ななしの冒険者</span></div></div>
-          <div class="floor-status"><span class="status-label">現在の階層</span><div class="floor-number">B<span id="floor_num">01</span><span class="floor-max">/ 05</span></div></div>
+          <div class="floor-status"><span class="status-label">現在の階層</span><div class="floor-number">G-<span id="floor_num">01</span><span class="floor-max">/ 06</span></div></div>
           <div class="life-status"><span class="status-label">スタミナ</span><div class="hearts" id="hearts" role="img" aria-label="スタミナ3 / 3"><img id="heart_01" src="./img/svg/heart.svg" alt=""><img id="heart_02" src="./img/svg/heart.svg" alt=""><img id="heart_03" src="./img/svg/heart.svg" alt=""></div></div>
           <div class="turn-status"><span class="status-label">残りターン</span><div class="turn-display"><span id="head_line_inner-text">5</span><span class="turn-pips" id="turn-pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></div></div>
           <div class="treasure-status"><span class="status-label">手に入れたお宝</span><div class="treasure-number"><svg aria-hidden="true"><use href="#icon-chest"/></svg><span id="points_num">0000</span><span class="points-unit">pt</span></div></div>
@@ -51,19 +51,20 @@
 
         <!-- 背景のドット絵、現在地、終了時のメッセージ -->
         <section class="dungeon-scene" id="dungeon-scene" aria-label="松明が照らす石造りの遺跡。左には整備された道、右には崩れかけた道が続く。">
-          <img class="dungeon-art" src="./img/dungeon.png" alt="二つの石のアーチが並ぶ、レトロなドット絵のダンジョン" width="1774" height="887" fetchpriority="high">
+          <img class="dungeon-art" id="dungeon-art" src="./img/dungeon.png" alt="二つの石のアーチが並ぶ、レトロなドット絵のダンジョン" width="1774" height="887" fetchpriority="high">
           <div class="scene-shading" aria-hidden="true"></div>
-          <div class="scene-location"><span class="location-dot" aria-hidden="true"></span><span id="location-text">地下1階 ― 忘れられた回廊</span></div>
-          <ol class="floor-map" id="floor-map" aria-label="全5階層の進行状況"><li class="current" aria-label="1階層 現在地">1</li><li aria-label="2階層">2</li><li aria-label="3階層">3</li><li aria-label="4階層">4</li><li aria-label="5階層">5</li></ol>
+          <div class="scene-location"><span class="location-dot" aria-hidden="true"></span><span id="location-text">第1階層 ― 忘却の回廊</span></div>
+          <ol class="floor-map" id="floor-map" aria-label="全6階層の進行状況"><li class="current" aria-label="1階層 現在地">1</li><li aria-label="2階層">2</li><li aria-label="3階層">3</li><li aria-label="4階層">4</li><li aria-label="5階層">5</li><li aria-label="6階層 ゴール">6</li></ol>
           <div class="scene-path-label left-path" aria-hidden="true"><span>←</span> 静かな気配</div>
           <div class="scene-path-label right-path" aria-hidden="true">不穏な気配 <span>→</span></div>
           <img class="adventurer scene-sprite" src="./img/svg/adventurer.svg" alt="">
           <div class="ending-banner" id="ending-banner" hidden><span class="ending-ornament" aria-hidden="true">◆ ─── ◆ ─── ◆</span><strong id="ending-title"></strong><span id="ending-subtitle"></span><span class="ending-ornament" aria-hidden="true">◆ ─── ◆ ─── ◆</span></div>
           <div class="scene-caption" aria-hidden="true">— 道を選び、闇の奥へ —</div>
+          <div class="scene-blackout" id="scene-blackout" aria-hidden="true"></div>
         </section>
 
         <!-- カード全体をボタンにし、元の左右選択の処理につなぐ -->
-        <section class="choices" aria-label="進む道を選ぶ">
+        <section class="choices" id="route-choices" aria-label="進む道を選ぶ">
           <button class="route route-left is-selected" id="button_left" type="button">
             <span class="route-heading"><span class="route-kicker">THE SAFE PATH</span><span class="risk-tag safe">堅実な選択</span></span>
             <span class="route-name"><span class="route-cursor" aria-hidden="true">▶</span>整備された道</span>
@@ -92,13 +93,13 @@
       </div>
 
       <div class="keyboard-hints" aria-label="キーボード操作"><span><kbd>←</kbd> <kbd>→</kbd> 道を選ぶ</span><span><kbd>ENTER</kbd> 進む</span><span><kbd>ESC</kbd> 帰還</span><span><kbd>R</kbd> やり直す</span></div>
-      <p class="game-note">スタミナが尽きると、お宝はすべて失われる。<span>最深部の5階層目を突破して、遺跡の謎を解き明かそう。</span></p>
+      <p class="game-note">スタミナが尽きると、お宝はすべて失われる。<span>5階層目を突破して、最上階の天空の庭園を目指そう。</span></p>
     </main>
     <footer class="site-footer"><span>EVERY CHOICE HAS ITS PRICE.</span><span>お宝探し <span aria-hidden="true">◆</span> 深淵の分かれ道</span></footer>
   </div>
 
   <dialog id="help-dialog" class="help-dialog" aria-labelledby="help-title">
-    <div class="help-inner"><p class="eyebrow">HOW TO PLAY</p><h2 id="help-title">遺跡を探索するきみへ</h2><p>左の道は成功しやすく、右の道は危険なぶん、多くのお宝が眠っている。</p><ol><li>道を選ぶたび、1ターンを消費する。</li><li>成功するとお宝を獲得し、次の階層へ進む。</li><li>失敗するとスタミナが1つ減る。同じ階層で再挑戦だ。</li><li>5階層目で成功すればクリア。探索は全部で5ターンまで。</li><li>スタミナが尽きるとお宝はすべて没収。途中で帰還すれば、今あるお宝を持ち帰れる。</li></ol><p class="help-footnote">ターン切れでも、スタミナが残っていればお宝を持ち帰れる。</p><button id="help-close" class="return-button" type="button">わかった、冒険へ戻る</button></div>
+    <div class="help-inner"><p class="eyebrow">HOW TO PLAY</p><h2 id="help-title">遺跡を探索するきみへ</h2><p>左の道は成功しやすく、右の道は危険なぶん、多くのお宝が眠っている。</p><ol><li>道を選ぶたび、1ターンを消費する。</li><li>成功するとお宝を獲得し、次の階層へ進む。</li><li>失敗するとスタミナが1つ減る。同じ階層で再挑戦だ。</li><li>5階層目で成功すると、第6階層の天空の庭園に到達してクリア。探索は全部で5ターンまで。</li><li>スタミナが尽きるとお宝はすべて没収。途中で帰還すれば、今あるお宝を持ち帰れる。</li></ol><p class="help-footnote">ターン切れでも、スタミナが残っていればお宝を持ち帰れる。</p><button id="help-close" class="return-button" type="button">わかった、冒険へ戻る</button></div>
   </dialog>
   <!-- 画面の演出を準備してから、元のゲーム処理を読み込む。 -->
   <script src="./JavaScript/vendor/jquery-3.7.1.min.js"></script>

@@ -378,6 +378,21 @@ h1 {
     pointer-events:none;
 }
 
+/* 階層を移動するときは、画像や現在地の表示ごと黒く覆う。 */
+.scene-blackout {
+    position:absolute;
+    inset:0;
+    z-index:10;
+    background:#000;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 150ms linear;
+}
+
+.scene-blackout.is-dark {
+    opacity:1;
+}
+
 .dungeon-scene:after {
     content:'';
     position:absolute;
@@ -535,6 +550,22 @@ h1 {
 
 .dungeon-scene[data-ending='dead'] .ending-banner {
     color:var(--red);
+}
+
+/* 最上階では、庭園と空に差し込む光を見せる。 */
+.dungeon-scene[data-ending='cleared'] .dungeon-art {
+    filter:brightness(1) saturate(1);
+}
+
+.dungeon-scene[data-ending='cleared'] .scene-shading {
+    opacity:.25;
+}
+
+.dungeon-scene[data-ending='cleared'] .ending-banner {
+    justify-content:flex-end;
+    background:linear-gradient(transparent 40%,#07090cbd);
+    padding-bottom:20px;
+    gap:8px;
 }
 
 .dungeon-scene[data-ending] .scene-path-label,.dungeon-scene[data-ending] .scene-sprite,.dungeon-scene[data-ending] .scene-caption {

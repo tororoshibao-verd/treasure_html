@@ -2,7 +2,7 @@
 $(function () {
     // constは途中で変えない設定値。ゲームの上限をここにまとめる。
     const MAX_TURNS = 5;
-    const MAX_FLOOR = 5;
+    const MAX_FLOOR = 5; // 道を選んで探索する階層。突破後の第6階層がゴール。
     const MAX_LIFE = 3;
     const INITIAL_MESSAGE = "古びた扉の向こうに、ふたつの道がある。<br>さあ、どちらの道へ進もうか。";
 
@@ -56,13 +56,15 @@ $(function () {
             $("#heart_0" + i).attr("src", "./img/svg/" + heartImage);
         }
 
-        // forEachで左・右の順に同じ表示更新を行う。
-        ["left", "right"].forEach(function (direction) {
-            const road = getRoadInfo(direction);
-            // ラベルと単位はHTMLに置き、この処理では数字の部分だけを更新する。
-            $("#choise_" + direction + "_probability").text(road.successRate);
-            $("#choise_" + direction + "_points").text(road.successPoints);
-        });
+        // 第6階層はゴールなので、探索する道の設定は第5階層まで使う。
+        if (floorCount <= MAX_FLOOR) {
+            ["left", "right"].forEach(function (direction) {
+                const road = getRoadInfo(direction);
+                // ラベルと単位はHTMLに置き、この処理では数字の部分だけを更新する。
+                $("#choise_" + direction + "_probability").text(road.successRate);
+                $("#choise_" + direction + "_points").text(road.successPoints);
+            });
+        }
 
         // disabledがtrueなら操作不可、falseなら操作可能。やり直すボタンは常に使える。
         $("#button_left, #button_right, #button_back").prop("disabled", isFinished);
@@ -93,11 +95,12 @@ $(function () {
             // 次の階層に進む前に、現在挑戦した階層のポイントを加算する。
             points += road.successPoints;
 
-            // 5階層目の探索に成功したら、6階層へ進まずにクリアする。
+            // 第5階層の報酬を受け取り、第6階層の天空の庭園へ到達してクリアする。
             if (floorCount === MAX_FLOOR) {
+                floorCount += 1;
                 isFinished = true;
                 endingType = "cleared";
-                resultMessage = "ゲームクリア！" + MAX_FLOOR + "階層を制覇！<br>獲得点数は" + points + "ptでした";
+                resultMessage = "ゲームクリア！" + MAX_FLOOR + "階層を制覇し、天空の庭園へ！<br>獲得点数は" + points + "ptでした";
             } else {
                 floorCount += 1;
                 resultMessage = "お宝をゲット！" + floorCount + "階層へ";
